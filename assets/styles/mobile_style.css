@@ -888,14 +888,17 @@ body.mode-select-page .header {
     line-height: 1.4;
 }
 .how-to-list li:nth-child(odd) { background: var(--soft-surface); }
-.how-to-icon {
+.how-to-list li > .how-to-icon {
     display: grid;
     place-items: center;
+    flex: 0 0 auto;
     width: 2.3rem;
     height: 2.3rem;
     border-radius: 9px;
     color: var(--primary-text);
     background: var(--primary-bg);
+    line-height: 1;
+    text-align: center;
 }
 .intro-card > .primary-action {
     display: flex;
