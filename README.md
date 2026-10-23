@@ -15,6 +15,8 @@ There is no build step or package installation required.
 - **Spell Off** — a longer spelling challenge.
 - **YouTube words** — practice with the project's YouTube word list.
 
+The welcome screen explains the audio prompts and answer flow before players choose a mode. The guide and mode picker use responsive layouts and share the light/dark theme.
+
 Unfinished games save progress in the current browser tab and can be restored after a reload. Closing the tab clears that session progress. Theme preference (light or dark) and daily completion are stored locally in the browser; they are not synced between devices.
 
 ## Run locally
