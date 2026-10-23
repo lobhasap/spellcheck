@@ -3,6 +3,21 @@ const KEYBOARD_EL = document.querySelector("#keyboard")
 const attempt = document.querySelector("#attempt-box")
 var level = document.querySelector("#level")
 
+const DAILY_PROGRESS_KEY = "spellcheck-daily-progress";
+const DAILY_PUZZLE_ID = sessionStorage.getItem("puzzleNum");
+let dailyAlreadyComplete = false;
+try {
+    dailyAlreadyComplete = Boolean(DAILY_PUZZLE_ID) &&
+        localStorage.getItem("dailyCompletedPuzzle") === DAILY_PUZZLE_ID;
+} catch (error) {
+    // The daily challenge remains playable when browser storage is unavailable.
+}
+
+// Completion is tracked per puzzle, so the next day's challenge remains available.
+if (dailyAlreadyComplete) {
+    window.location.replace("mode_select.html");
+}
+
 var wordOne = document.querySelector("#word-one")
 var wordTwo = document.querySelector("#word-two")
 var wordThree = document.querySelector("#word-three")
@@ -44,6 +59,29 @@ var numSubmitted;
 var numWrong = 0;
 var correctSpellingLst = [];
 var submissionLst = [];
+var currentAudioPath;
+
+function saveDailyProgress() {
+    if (!Array.isArray(wordLst) || !wordLst.length) return;
+    SpellcheckProgress.save(DAILY_PROGRESS_KEY, {
+        puzzleId: DAILY_PUZZLE_ID,
+        levelText: level.textContent,
+        levelPath: currentAudioPath,
+        wordLst,
+        numSubmitted,
+        numWrong,
+        attemptStr,
+        results,
+        correctSpellingLst,
+        submissionLst,
+        players: playerLst.map((player) => ({
+            correct: player[2],
+            submission: player[3],
+            status: player[0].classList.contains("fa-check") ? "correct" :
+                player[0].classList.contains("fa-xmark") ? "incorrect" : "pending"
+        }))
+    });
+}
 
 KEYBOARD_EL.innerHTML = `<div id="keyboard-cont">
     <div class="first-row">
@@ -77,10 +115,10 @@ KEYBOARD_EL.innerHTML = `<div id="keyboard-cont">
         <button class="keyboard-button boxed" id="b">B</button>
         <button class="keyboard-button boxed" id="n">N</button>
         <button class="keyboard-button boxed" id="m">M</button>
-        <button class="keyboard-button boxed fa fa-delete-left" style="line-height:1.5" id="Backspace"></button>
+        <button type="button" class="keyboard-button boxed fa fa-delete-left" style="line-height:1.5" id="Backspace" aria-label="Delete last letter"></button>
     </div>
     <div class="fourth-row">
-        <button class="keyboard-button boxed" id="Enter">submit</button>
+        <button type="button" class="keyboard-button boxed" id="Enter" aria-label="Submit spelling">submit</button>
     </div>
 </div>`
 
@@ -104,10 +142,12 @@ function checkLevel(level){
     } else {
         window.location.replace("ahshit.html");    
     }
+    saveDailyProgress();
 }
 
 // POPULATE PAGE WITH LEVEL APPROPRIATE WORDS
 function assignSound(levelPath, words){
+    currentAudioPath = levelPath;
     path = `assets/audio/${levelPath}`;
    try{
         // setting neutral values
@@ -142,6 +182,13 @@ function nextRound(){
 }
 
 function endGame(){
+    try {
+        localStorage.setItem("dailyCompletedPuzzle", DAILY_PUZZLE_ID);
+        localStorage.removeItem("dailyStatus");
+    } catch (error) {
+        // Results still work even if persistent storage is unavailable.
+    }
+    SpellcheckProgress.clear(DAILY_PROGRESS_KEY);
     sessionStorage.setItem("numWrong", numWrong);
     sessionStorage.setItem("correctSpellingLst", correctSpellingLst);
     sessionStorage.setItem("submissionLst", submissionLst);
@@ -155,14 +202,15 @@ function updateResults(){
         correctSpellingLst.push(player[2])
         submissionLst.push(player[3])
         if (player[0].classList.contains("fa-check")) {
-            results += "🟩"
+            results += "✅"
         } else if (player[0].classList.contains("fa-xmark")) {
-            results += "🟥"
+            results += "❌"
             numWrong += 1;
         }
         results += " "
     })
     results += "\\n"
+    saveDailyProgress();
 }
 
 // STOP PLAYING SOUND
@@ -175,9 +223,9 @@ function stopSound(soundObj) {
 function insertLetter(pressedKey) {
     pressedKey = pressedKey.toUpperCase()
     attemptStr = attemptStr + pressedKey;
-    attempt.focus();
     attempt.value = attemptStr;
     attempt.scrollLeft = attempt.scrollWidth;
+    saveDailyProgress();
 }
 
 // DELETE A LETER
@@ -186,7 +234,14 @@ function deleteLetter () {
         attemptStr = attemptStr.slice(0,-1);
     }
     attempt.value = attemptStr;
+    saveDailyProgress();
 }
+
+attempt.addEventListener("input", () => {
+    attemptStr = attempt.value.toUpperCase().replace(/[^A-Z]/g, "");
+    attempt.value = attemptStr;
+    saveDailyProgress();
+});
 
 // CHECK IF GUESS IS CORRECT
 
@@ -209,6 +264,15 @@ function guessPreprocess(){
 }
 
 function checkGuess() {
+    // A prompt can be submitted only once; ignore stale or repeated selections.
+    if (!activePlayer || activePlayer[0].classList.contains("submitted")) {
+        activeWord = null;
+        activePlayer = null;
+        attemptStr = '';
+        attempt.value = attemptStr;
+        return;
+    }
+
     //correctSpellingLst.push(`<td>${activeWord}</td>`);        
     activePlayer[2] = `<td>${activeWord}</td>`
 
@@ -249,6 +313,7 @@ function checkGuess() {
         showNextRound();
         //nextRound();
     }
+    saveDailyProgress();
     return;
 }
 
@@ -317,30 +382,35 @@ function resetPlayer(playerLst) {
 // PROMPT MANAGEMENT
 
 wordOne.addEventListener("click", (e) => {
+    if (wordOne.classList.contains("submitted")) return;
     activeWord = wordLst[0];
     //activePlayer = [wordOne, wordOnePlayer];
     activePlayer = playerLst[0];
     updatePlayer(playerLst, activePlayer)
 })
 wordTwo.addEventListener("click", (e) => {
+    if (wordTwo.classList.contains("submitted")) return;
     activeWord = wordLst[1];
     //activePlayer = [wordTwo, wordTwoPlayer];
     activePlayer = playerLst[1];
     updatePlayer(playerLst, activePlayer)
 })
 wordThree.addEventListener("click", (e) => {
+    if (wordThree.classList.contains("submitted")) return;
     activeWord = wordLst[2];
     activePlayer = playerLst[2];
     //activePlayer = [wordThree, wordThreePlayer];
     updatePlayer(playerLst, activePlayer)
 })
 wordFour.addEventListener("click", (e) => {
+    if (wordFour.classList.contains("submitted")) return;
     activeWord = wordLst[3];
     activePlayer = playerLst[3];
     //activePlayer = [wordFour, wordFourPlayer];
     updatePlayer(playerLst, activePlayer)
 })
 wordFive.addEventListener("click", (e) => {
+    if (wordFive.classList.contains("submitted")) return;
     activeWord = wordLst[4];
     activePlayer = playerLst[4];
     //activePlayer = [wordFive, wordFivePlayer];
@@ -381,20 +451,18 @@ document.addEventListener("keyup", (e) => {
    let pressedKey = String(e.key)
    let found = pressedKey.match(/[a-z]/gi)
 
+    if (e.target === attempt && pressedKey !== "Enter") return;
+
     if (pressedKey === "Enter") {
         document.querySelector(`#${pressedKey}`).classList.add("clicked")
-        setTimeout(() => {
-            setTimeout(document.querySelector(`#${pressedKey}`).classList.remove("clicked"));
-          }, 50);
+        setTimeout(() => document.querySelector(`#${pressedKey}`).classList.remove("clicked"), 50);
         guessPreprocess();
         return;
     }
 
     if (pressedKey === "Backspace" && attemptStr.length != 0) {
         document.querySelector(`#${pressedKey}`).classList.add("clicked")
-        setTimeout(() => {
-            setTimeout(document.querySelector(`#${pressedKey}`).classList.remove("clicked"));
-          }, 50);
+        setTimeout(() => document.querySelector(`#${pressedKey}`).classList.remove("clicked"), 50);
         deleteLetter()
         return;
     }
@@ -404,11 +472,42 @@ document.addEventListener("keyup", (e) => {
     } else {
         insertLetter(pressedKey)
         document.querySelector(`#${pressedKey.toLowerCase()}`).classList.add("clicked")
-        setTimeout(() => {
-            setTimeout(document.querySelector(`#${pressedKey.toLowerCase()}`).classList.remove("clicked"));
-            }, 50);
+        setTimeout(() => document.querySelector(`#${pressedKey.toLowerCase()}`).classList.remove("clicked"), 50);
         return;
     }
 })
 
-checkLevel(level)
+function restoreDailyProgress() {
+    const saved = SpellcheckProgress.load(DAILY_PROGRESS_KEY);
+    if (!saved || saved.puzzleId !== DAILY_PUZZLE_ID || !Array.isArray(saved.wordLst)) return false;
+
+    level.textContent = saved.levelText;
+    assignSound(saved.levelPath, saved.wordLst);
+    numSubmitted = saved.numSubmitted || 0;
+    numWrong = saved.numWrong || 0;
+    attemptStr = saved.attemptStr || '';
+    results = saved.results || '';
+    correctSpellingLst = saved.correctSpellingLst || [];
+    submissionLst = saved.submissionLst || [];
+    playerLst.forEach((player, index) => {
+        const state = saved.players?.[index];
+        if (!state) return;
+        player[2] = state.correct || '';
+        player[3] = state.submission || '';
+        if (state.status === "correct") {
+            player[0].classList.add("submitted", "fa-check");
+            player[0].classList.remove("fa-play-circle");
+            player[0].style.backgroundColor = "#79b15a";
+        } else if (state.status === "incorrect") {
+            player[0].classList.add("submitted", "fa-xmark");
+            player[0].classList.remove("fa-play-circle");
+            player[0].style.backgroundColor = "#d25842";
+        }
+    });
+    attempt.value = attemptStr;
+    if (numSubmitted >= 5) showNextRound();
+    saveDailyProgress();
+    return true;
+}
+
+if (!dailyAlreadyComplete && !restoreDailyProgress()) checkLevel(level)

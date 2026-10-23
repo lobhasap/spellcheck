@@ -2,50 +2,41 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0 maximum-scale=1.0, user-scalable=0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spellcheck - A Word Game | Home</title>
-    <link rel="stylesheet" href="assets/styles/large_style.css" media="(min-width: 800px)">
+    <link rel="stylesheet" href="assets/styles/large_style.css" media="(min-width: 801px)">
     <link rel="stylesheet" href="assets/styles/mobile_style.css" media="(max-width: 800px)">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/x-icon" href="assets/icons/spellcheck.png">
+    <script src="assets/scripts/theme.js" defer></script>
 </head>
-<body>
+<body class="intro-page-body">
     
     <div class="header">
         <div id="header-with-menu">
             <h1 class="boxed" id="header-title"><span class="">Spellcheck</span></h1>
+            <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Switch theme" title="Switch theme">☾</button>
         </div>
 
     </div>
 
-    <div class="content">
-        <h2 class="boxed">How to Play</h2>
-        <table>
-            <tr>
-                <td style="font-size: 24pt; vertical-align: middle; text-align: center;"><span class="fa fa-circle-play" ></span></td>
-                <td>Press the audio button to hear the word and related information.</td>
-            </tr>
-            <tr>
-                <td style="font-size: 24pt; vertical-align: middle; text-align: center;"><span class="fa fa-repeat" ></span></td>
-                <td>Prompt playback will automatically loop.</td>
-            </tr>
-            <tr>
-                <td style="font-size: 24pt; vertical-align: middle; text-align: center;"><span class="fa fa-i-cursor" ></span></td>
-                <td>You can make an attempt at any point - even if it <span class="error">interruppts</span> the audio playback.</td>
-            </tr>
-            <tr>
-                <td style="font-size: 24pt; vertical-align: middle; text-align: center;"><span class="fa fa-shuffle" ></span></td>
-                <td>You can make an attempt in any order.</td>
-            </tr>
-            <tr>
-                <td style="font-size: 24pt; vertical-align: middle; text-align: center;"><span class="fa fa-dice" ></span></td>
-                <td>You can only submit one attempt.</td>
-            </tr>
-        </table>    
-        <a href="mode_select.html">
-            <div class="btn boxed">
-                get <span class="error">startd</span>&ensp;<i class="fa fa-arrow-right" style="font-size:10pt;"></i>
+    <main class="content intro-page">
+        <section class="intro-card" aria-labelledby="how-to-play-title">
+            <div class="intro-heading">
+                <span class="eyebrow">A quick guide</span>
+                <h2 id="how-to-play-title">How to play</h2>
+                <p>Listen closely, type what you hear, and see how many you can get right.</p>
             </div>
-        </a>
+            <ul class="how-to-list">
+                <li><span class="how-to-icon fa fa-circle-play" aria-hidden="true"></span><span>Play the audio to hear the word and its related information.</span></li>
+                <li><span class="how-to-icon fa fa-repeat" aria-hidden="true"></span><span>The prompt loops automatically, so you can listen again.</span></li>
+                <li><span class="how-to-icon fa fa-i-cursor" aria-hidden="true"></span><span>Type and submit whenever you’re ready—even while audio is playing.</span></li>
+                <li><span class="how-to-icon fa fa-shuffle" aria-hidden="true"></span><span>Answer the prompts in any order.</span></li>
+                <li><span class="how-to-icon fa fa-dice" aria-hidden="true"></span><span>Each word allows one submitted attempt.</span></li>
+            </ul>
+            <a href="mode_select.html" class="btn boxed primary-action">
+                Choose a game <i class="fa fa-arrow-right" aria-hidden="true"></i>
+            </a>
+        </section>
 </body>
 </html>

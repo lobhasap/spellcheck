@@ -2,36 +2,39 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0 maximum-scale=1.0, user-scalable=0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spellcheck - A Word Game | YouTube Edition</title>
-    <link rel="stylesheet" href="assets/styles/large_style.css" media="(min-width: 800px)">
+    <link rel="stylesheet" href="assets/styles/large_style.css" media="(min-width: 801px)">
     <link rel="stylesheet" href="assets/styles/mobile_style.css" media="(max-width: 800px)">
     <link rel="stylesheet" href="assets/styles/no_scroll.css" media="(max-width: 800px)">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css">
     <link rel="icon" type="image/x-icon" href="assets/icons/spellcheck.png">
+    <script src="assets/scripts/theme.js" defer></script>
 
 </head>
 <body>
     <div class="header">
-        <div id="header-with-menu">
+        <div id="header-with-menu" class="has-menu">
             <a href="mode_select.html" class="boxed btn" id="header-menu"><i class="fa fa-arrow-left" style="font-size:30pt; padding:0%"></i></a>
-            <div></div>
             <h1 class="boxed" id="header-title"><span class="">Spellcheck</span></h1>
+            <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Switch theme" title="Switch theme">☾</button>
         </div>
     </div>
     <div class="content">
         <div id="top-banner">
             <h2 class="boxed" id="count"></h2>
         </div>
+        <p class="game-help">Listen to the word, spell it, then press <strong>submit</strong>. You have one try per word.</p>
         <div id="practice-prompt">
-            <div id="word-one" class="prompt boxed btn fa fa-play-circle" style="font-size: 24pt;">
+            <button type="button" id="word-one" class="prompt boxed btn fa fa-play-circle" aria-label="Play or stop the word audio" style="font-size: 24pt;">
                 <audio id="word-one-player" src="" loop></audio>
-            </div>
-            <input id="attempt-box" type="text" placeholder="start typing..." readonly>
+            </button>
+            <input id="attempt-box" type="text" aria-label="Your spelling" placeholder="spell the word…" inputmode="text" autocapitalize="characters" autocomplete="off" spellcheck="false">
         </div>
         <div id="keyboard"></div>
     </div>
 </body>
 <script src="assets/scripts/wordLstGenerator.js"></script>
+<script src="assets/scripts/game_progress.js"></script>
 <script src="assets/scripts/youtube.js"></script> 
 </html>

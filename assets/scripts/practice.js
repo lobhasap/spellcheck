@@ -23,11 +23,12 @@ var submissionLst = [];
 var correctSpellingLst = [];
 var wrongSubmission = '';
 var playerLst = [[wordOne, wordOnePlayer]];
+const PROGRESS_KEY = "spellcheck-practice-progress";
 
 KEYBOARD_EL.innerHTML = `<div id="keyboard-cont">
     <div class="first-row">
         <button class="keyboard-button boxed" id="q">Q</button>
-        <button class="keyboard-button boxed" id="q">W</button>
+        <button class="keyboard-button boxed" id="w">W</button>
         <button class="keyboard-button boxed" id="e">E</button>
         <button class="keyboard-button boxed" id="r">R</button>
         <button class="keyboard-button boxed" id="t">T</button>
@@ -56,10 +57,10 @@ KEYBOARD_EL.innerHTML = `<div id="keyboard-cont">
         <button class="keyboard-button boxed" id="b">B</button>
         <button class="keyboard-button boxed" id="n">N</button>
         <button class="keyboard-button boxed" id="m">M</button>
-        <button class="keyboard-button boxed fa fa-delete-left" style="line-height:1.5" id="Backspace"></button>
+        <button type="button" class="keyboard-button boxed fa fa-delete-left" style="line-height:1.5" id="Backspace" aria-label="Delete last letter"></button>
     </div>
-    <div class="fourthsrow">
-        <button class="keyboard-button boxed" id="Enter">submit</button>
+    <div class="fourth-row">
+        <button type="button" class="keyboard-button boxed" id="Enter" aria-label="Submit spelling">submit</button>
     </div>
 </div>`
 
@@ -68,7 +69,20 @@ var wordLst;
 // CHECK LEVEL 
 function checkLevel(level){
     resetPlayer(playerLst);
-    attempt.value=attemptStr;
+    const saved = SpellcheckProgress.load(PROGRESS_KEY);
+    if (saved && saved.level === level && Array.isArray(saved.wordLst)) {
+        wordLst = saved.wordLst;
+        wordCounter = saved.wordCounter || 0;
+        numCorrect = saved.numCorrect || 0;
+        attemptStr = saved.attemptStr || '';
+        submissionLst = saved.submissionLst || [];
+        correctSpellingLst = saved.correctSpellingLst || [];
+        levelPath = level === "easy" ? "levelOneNEW" : level === "medium" ? "levelTwoNEW" : "levelThreeNEW";
+        path = `assets/audio/${levelPath}`;
+        updateWord();
+        return;
+    }
+    if (saved) SpellcheckProgress.clear(PROGRESS_KEY);
     if (level == "easy"){
         wordLst = shuffle(easyWords)
         levelPath = "levelOneNEW"
@@ -86,15 +100,35 @@ function checkLevel(level){
 }
 
 function updateWord(){
+    if (wordCounter >= wordLst.length) {
+        endGame();
+        return;
+    }
     resetPlayer(playerLst);
     activeWord = wordLst[wordCounter];
+    activePlayer = playerLst[0];
     wordOnePlayer.src = `${path}/${wordLst[wordCounter]}.mp3`
     publicCount.innerHTML = `${wordCounter}<br>total words`
     publicCorrectCount.innerHTML = `${5-(wordCounter - numCorrect)}<br>lives remaining`
+    attempt.value = attemptStr;
+    saveProgress();
+}
 
+function saveProgress() {
+    if (!Array.isArray(wordLst) || !wordLst.length) return;
+    SpellcheckProgress.save(PROGRESS_KEY, {
+        level,
+        wordLst,
+        wordCounter,
+        numCorrect,
+        attemptStr,
+        submissionLst,
+        correctSpellingLst
+    });
 }
 
 function endGame(){
+    SpellcheckProgress.clear(PROGRESS_KEY);
     sessionStorage.setItem("submissionLst", submissionLst)
     sessionStorage.setItem("correctSpellingLst",correctSpellingLst)
     sessionStorage.setItem("level", level)
@@ -113,9 +147,9 @@ function stopSound(soundObj) {
 function insertLetter(pressedKey) {
     pressedKey = pressedKey.toUpperCase()
     attemptStr = attemptStr + pressedKey;
-    attempt.focus();
     attempt.value = attemptStr;
     attempt.scrollLeft = attempt.scrollWidth;
+    saveProgress();
 }
 
 // DELETE A LETER
@@ -124,7 +158,14 @@ function deleteLetter () {
         attemptStr = attemptStr.slice(0,-1);
     }
     attempt.value = attemptStr;
+    saveProgress();
 }
+
+attempt.addEventListener("input", () => {
+    attemptStr = attempt.value.toUpperCase().replace(/[^A-Z]/g, "");
+    attempt.value = attemptStr;
+    saveProgress();
+});
 
 function guessPreprocess() {
     if (lastActiveWord != null && activeWord==null) {
@@ -146,11 +187,15 @@ function guessPreprocess() {
 
 // CHECK IF GUESS IS CORRECT
 function checkGuess() {
+    // The current word is playable even if the user submits before tapping audio.
+    if (!activePlayer) activePlayer = playerLst[0];
     correctSpellingLst.push(`<td>${activeWord}</td>`)
     if (attemptStr.toLowerCase() == activeWord.toLowerCase()) {
         submissionLst.push(`<td>${attemptStr}</td>`)
         wordCounter += 1;
         numCorrect += 1;
+        attemptStr = '';
+        attempt.value = attemptStr;
 
         stopSound(activePlayer[1]);
 
@@ -166,6 +211,8 @@ function checkGuess() {
         submissionLst.push(`<td class="error">${attemptStr}</td>`)
 
         wordCounter += 1;
+        attemptStr = '';
+        attempt.value = attemptStr;
 
         stopSound(activePlayer[1]);
 
@@ -261,9 +308,7 @@ document.getElementById("keyboard-cont").addEventListener("click", (e) => {
     } else {
         insertLetter(pressedKey)
         document.querySelector(`#${pressedKey.toLowerCase()}`).classList.add("clicked")
-        setTimeout(() => {
-            setTimeout(document.querySelector(`#${pressedKey.toLowerCase()}`).classList.remove("clicked"));
-            }, 50);
+        setTimeout(() => document.querySelector(`#${pressedKey.toLowerCase()}`).classList.remove("clicked"), 50);
         return;
     }
     //document.dispatchEvent(new KeyboardEvent("keyup", {'key': key}))
@@ -275,20 +320,20 @@ document.addEventListener("keyup", (e) => {
    let pressedKey = String(e.key)
    let found = pressedKey.match(/[a-z]/gi)
 
+    // Let the focused text input handle letters and deletion natively, including
+    // the mobile soft keyboard. Enter still submits through the game handler.
+    if (e.target === attempt && pressedKey !== "Enter") return;
+
     if (pressedKey === "Enter") {
         document.querySelector(`#${pressedKey}`).classList.add("clicked")
-        setTimeout(() => {
-            setTimeout(document.querySelector(`#${pressedKey}`).classList.remove("clicked"));
-          }, 50);
+        setTimeout(() => document.querySelector(`#${pressedKey}`).classList.remove("clicked"), 50);
         guessPreprocess()
         return;
     }
 
     if (pressedKey === "Backspace" && attemptStr.length != 0) {
         document.querySelector(`#${pressedKey}`).classList.add("clicked")
-        setTimeout(() => {
-            setTimeout(document.querySelector(`#${pressedKey}`).classList.remove("clicked"));
-          }, 50);
+        setTimeout(() => document.querySelector(`#${pressedKey}`).classList.remove("clicked"), 50);
         deleteLetter()
         return;
     }
@@ -298,9 +343,7 @@ document.addEventListener("keyup", (e) => {
     } else {
         insertLetter(pressedKey)
         document.querySelector(`#${pressedKey.toLowerCase()}`).classList.add("clicked")
-        setTimeout(() => {
-            setTimeout(document.querySelector(`#${pressedKey.toLowerCase()}`).classList.remove("clicked"));
-            }, 50);
+        setTimeout(() => document.querySelector(`#${pressedKey.toLowerCase()}`).classList.remove("clicked"), 50);
         return;
     }
 })
